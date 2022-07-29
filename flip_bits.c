@@ -10,7 +10,10 @@ typedef enum {
   STATUS_ERROR = 1,
 } STATUS_CODE;
 
-#define BITS_IN_A_BYTE 8
+#define BITS_IN_A_BYTE                 8
+
+#define BIT_OFFSET_PER_BYTE(offset)    (offset % BITS_IN_A_BYTE)
+#define BYTE_INDEX(offset)             (offset / BITS_IN_A_BYTE)
 
 // Assumes little endian
 void print_bits(void const * const ptr, size_t const size) {
@@ -39,7 +42,34 @@ void print_bits(void const * const ptr, size_t const size) {
  * @param result - binary value to store the result
  * @return STATUS_CODE - STATUS_SUCCESS if request okay, STATUS_ERROR if out of bounds request
  */
-// TODO: define get_bit function
+static STATUS_CODE get_bit(uint8_t *data, uint8_t byte_length, uint8_t bit_offset, bool *result)
+{
+    // PLEASE NOTE: The comments are verbose to demonstrate thought process of the code. 
+    // Based on coding standards, the return code can be stored in a variable with an "if-else"
+    // and retured at the end of the function if multiple returns per function are not allowed.
+    
+    // Handle null pointer and out of bounds request 
+    // For example: byte_length = 4, bit_offset of 32 is out of bounds
+    if ((data == NULL) || (bit_offset > ((BITS_IN_A_BYTE * byte_length) - 1)))
+    {
+      return STATUS_ERROR;
+    }
+
+    // Calculate bit offset per byte chunk
+    // For example: bit offset 12 = bit offset 4 per byte chunk
+    // The "%" operator limits the bit offset to (BITS_IN_A_BYTE - 1)
+    uint8_t bit_offset_per_byte = BIT_OFFSET_PER_BYTE(bit_offset);
+
+    // Calculate byte chunk index in data buffer
+    // For example: bit_offset of 12 = index 1, bit_offset of 30 = index 3
+    uint8_t byte_ix = BYTE_INDEX(bit_offset);
+
+    // Right shift the byte at byte_ix by bit_offset_per_byte so that the 
+    // requested bit is at the LSB and "AND" it with 1 to get the bit
+    *result = (bool)((data[byte_ix] >> bit_offset_per_byte) & 1);
+
+    return STATUS_SUCCESS;
+}
 
 /**
  * @brief Sets the bit at the given offset to 1.
@@ -50,7 +80,26 @@ void print_bits(void const * const ptr, size_t const size) {
  * @param bit_offset - the offset of the bit to set (0 is lsb)
  * @return STATUS_CODE - STATUS_SUCCESS if request okay, STATUS_ERROR if out of bounds request
  */
-// TODO: define set_bit function
+static STATUS_CODE set_bit(uint8_t *data, uint8_t byte_length, uint8_t bit_offset)
+{
+    // PLEASE NOTE: Explanation for the calculations can be found in get_bit(). 
+    
+    // Handle null pointer and out of bounds request 
+    if ((data == NULL) || (bit_offset > ((BITS_IN_A_BYTE * byte_length) - 1)))
+    {
+      return STATUS_ERROR;
+    }
+
+    // Calculate bit offset per byte chunk
+    uint8_t bit_offset_per_byte = BIT_OFFSET_PER_BYTE(bit_offset);
+
+    // Calculate byte chunk index in data buffer
+    uint8_t byte_ix = BYTE_INDEX(bit_offset);
+
+    data[byte_ix] |= (1 << bit_offset_per_byte);
+
+    return STATUS_SUCCESS;
+}
 
 /**
  * @brief Sets the bit at the given offset to 0.
@@ -61,7 +110,26 @@ void print_bits(void const * const ptr, size_t const size) {
  * @param bit_offset - the offset of the bit to clear (0 is lsb)
  * @return STATUS_CODE - STATUS_SUCCESS if request okay, STATUS_ERROR if out of bounds request
  */
-// TODO: define clear_bit function
+static STATUS_CODE clear_bit(uint8_t *data, uint8_t byte_length, uint8_t bit_offset)
+{
+    // PLEASE NOTE: Explanation for the calculations can be found in get_bit(). 
+    
+    // Handle null pointer and out of bounds request 
+    if ((data == NULL) || (bit_offset > ((BITS_IN_A_BYTE * byte_length) - 1)))
+    {
+      return STATUS_ERROR;
+    }
+
+    // Calculate bit offset per byte chunk
+    uint8_t bit_offset_per_byte = BIT_OFFSET_PER_BYTE(bit_offset);
+
+    // Calculate byte chunk index in data buffer
+    uint8_t byte_ix = BYTE_INDEX(bit_offset);
+
+    data[byte_ix] &= ~(1 << bit_offset_per_byte);
+
+    return STATUS_SUCCESS;
+}
 
 void get_bit_test() {
   uint8_t pass = 0;
